@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block start %}
+<div class="container mt-5">
+    <form id="update-recipe-form" class="col-6 mx-auto card p-3 shadow-lg">
+        <h2>Update Recipe</h2>
+        <div class="mb-3">
+            <label>Recipe Name</label>
+            <input id="recipe_name" required type="text" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label>Recipe Description</label>
+            <textarea id="recipe_description" class="form-control" required></textarea>
+        </div>
+        <div class="mb-3">
+            <label>Recipe Image</label>
+            <input id="recipe_image" type="file" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-success">Update Recipe</button>
+    </form>
+</div>
+
+<!-- JavaScript for handling the update -->
+<script>
+    const recipeId = "{{ recipe.id }}"; // Get recipe ID from the backend
+</script>
+<script>
+    // Function to fetch JWT token from local storage
+    function getToken() {
+        return localStorage.getItem('access');
+    }
+
+    // Load the existing recipe data into the form
+    async function loadRecipe() {
+        const token = getToken();
+        const response = await fetch(`/api/recipes/${recipeId}/`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const recipe = await response.json();
+            document.getElementById('recipe_name').value = recipe.recipe_name;
+            document.getElementById('recipe_description').value = recipe.recipe_description;
+        } else {
+            console.error('Failed to load recipe details');
+        }
+    }
+
+    // Handle form submission for updating the recipe
+    document.getElementById('update-recipe-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = getToken();
+        const formData = new FormData();
+        formData.append('recipe_name', document.getElementById('recipe_name').value);
+        formData.append('recipe_description', document.getElementById('recipe_description').value);
+
+        const fileInput = document.getElementById('recipe_image');
+        if (fileInput.files.length > 0) {
+            formData.append('recipe_image', fileInput.files[0]);
+        }
+
+        const response = await fetch(`/api/recipes/${recipeId}/`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (response.ok) {
+            alert('Recipe updated successfully!');
+            window.location.href = '/recipes/'; // Redirect to recipes page
+        } else {
+            console.error('Failed to update recipe');
+        }
+    });
+
+    // Load the recipe data when the page loads
+    loadRecipe();
+</script>
+{% endblock %}

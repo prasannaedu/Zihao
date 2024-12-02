@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block start %}
+
+<div class="container mt-5">
+    <!-- Login form -->
+    <form id="login-form" class="col-6 mx-auto card p-3 shadow-lg">
+        <h2>Login</h2>
+        <hr>
+        
+        <!-- Username input -->
+        <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" class="form-control" id="username" aria-describedby="usernameHelp" required>
+            <div id="usernameHelp" class="form-text">Your username for login.</div>
+        </div>
+
+        <!-- Password input -->
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control" id="password" required>
+        </div>
+
+        <!-- Register link -->
+        <p>Don't have an account? <a href="/register/">Register</a></p>
+
+        <!-- Submit button -->
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+
+<!-- JavaScript for login -->
+<script>
+    // Handle the login form submission
+document.getElementById('login-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    // Send login request to the backend
+    fetch('/api/token/', { //this will redirect to login/api/token/ url but we need to redirect to /api/token/ url so we need to add / in the starting of the url
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            username: username,
+            password: password,
+        }),
+    }).then(response => {
+        // if success alert with messge "success" to do this we write following code
+        if (response.ok) {
+            alert('success');
+            console.log('success');
+        }
+        if (!response.ok) {
+            throw new Error('Login failed');
+        }
+        return response;
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+        if (data.access) {
+            // Store the access token in localStorage or sessionStorage
+            localStorage.setItem('access_token', data.access);
+            localStorage.setItem('refresh_token', data.refresh);
+
+            // Redirect to /recipes/ page
+            // fetch('/recipes/', {
+            //     method: 'GET',
+            //     headers: { 'Authorization': `Bearer ${data.access}` },
+            //     body: JSON.stringify({ 'username': username, 'password': password })
+            // })
+
+            window.location.href = '/recipes/';
+        } else {
+            // Display error message if credentials are invalid
+            alert(data.error || 'Login failed');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+</script>
+
+{% endblock %}

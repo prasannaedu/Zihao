@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block start %}
+
+<div class="container mt-5">
+    <!-- Add Recipe Form -->
+    <form id="add-recipe-form" class="col-6 mx-auto card p-3 shadow-lg">
+        <h2>Add Recipe</h2>
+        <div class="mb-3">
+            <label>Recipe Name</label>
+            <input name="recipe_name" id="recipe_name" type="text" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label>Recipe Description</label>
+            <textarea name="recipe_description" id="recipe_description" class="form-control" required></textarea>
+        </div>
+        <div class="mb-3">
+            <label>Recipe Image</label>
+            <input type="file" id="recipe_image" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-success">Add Recipe</button>
+    </form>
+
+    <!-- Recipe Table -->
+    <table id="recipe-table" class="table mt-5">
+        <thead>
+            <tr>
+                <th scope="col">S.No</th>
+                <th scope="col">Recipe Name</th>
+                <th scope="col">Recipe Description</th>
+                <th scope="col">Recipe Image</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Recipes will be dynamically added here -->
+        </tbody>
+    </table>
+</div>
+
+<!-- JavaScript for handling API calls -->
+<script>
+  // Function to fetch the JWT token from localStorage
+  function getToken() {
+      return localStorage.getItem('access_token'); // Make sure the key matches the one used during login
+  }
+
+  // Function to load recipes from the API
+  async function loadRecipes() {
+      const token = getToken(); // Get the access token
+      if (!token) {
+          alert('You are not logged in. Redirecting to login page.');
+          window.location.href = '/login/'; // Redirect to login if token is missing
+          return;
+      }
+
+      try {
+          const response = await fetch('/recipes/', {
+              method: 'GET',
+              headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Accept': 'application/json',
+              },
+          });
+
+          if (response.ok) {
+              const data = await response.json();
+              const recipeTable = document.querySelector('#recipe-table tbody');
+              recipeTable.innerHTML = ''; // Clear existing rows
+
+              // Populate the table with recipes
+              data.receipes.forEach((recipe, index) => {
+                  const row = `
+                      <tr>
+                          <td>${index + 1}</td>
+                          <td>${recipe.receipe_name}</td>
+                          <td>${recipe.receipe_description}</td>
+                          <td><img src="/media/${recipe.receipe_image}" style="height: 100px;"></td>
+                          <td>
+                              <button class="btn btn-success" onclick="updateRecipe(${recipe.id})">Update</button>
+                              <button class="btn btn-danger" onclick="deleteRecipe(${recipe.id})">Delete</button>
+                          </td>
+                      </tr>`;
+                  recipeTable.innerHTML += row;
+              });
+          } else if (response.status === 401) {
+              alert('Session expired or unauthorized access. Redirecting to login.');
+              window.location.href = '/login/'; // Redirect to login if unauthorized
+          } else {
+              console.error('Failed to load recipes:', response.status);
+              alert('An error occurred while loading recipes. Please try again later.');
+          }
+      } catch (error) {
+          console.error('Error fetching recipes:', error);
+          alert('A network error occurred. Please check your connection.');
+      }
+  }
+
+  // Function to handle adding a new recipe
+  document.getElementById('add-recipe-form').addEventListener('submit', async (e) => {
+      e.preventDefault(); // Prevent form submission from refreshing the page
+      const token = getToken();
+
+      if (!token) {
+          alert('You are not logged in. Redirecting to login page.');
+          window.location.href = '/login/';
+          return;
+      }
+
+      try {
+          const formData = new FormData();
+          formData.append('receipe_name', document.getElementById('recipe_name').value);
+          formData.append('receipe_description', document.getElementById('recipe_description').value);
+          formData.append('receipe_image', document.getElementById('recipe_image').files[0]);
+
+          const response = await fetch('/recipes/create/', {
+              method: 'POST',
+              headers: {
+                  'Authorization': `Bearer ${token}`,
+              },
+              body: formData,
+          });
+
+          if (response.ok) {
+              alert('Recipe added successfully!');
+              loadRecipes(); // Reload the recipe list
+          } else {
+              console.error('Failed to add recipe:', response.status);
+              alert('An error occurred while adding the recipe. Please check the input.');
+          }
+      } catch (error) {
+          console.error('Error adding recipe:', error);
+          alert('A network error occurred. Please try again.');
+      }
+  });
+
+  // Function to delete a recipe
+  async function deleteRecipe(id) {
+      const token = getToken();
+
+      if (!token) {
+          alert('You are not logged in. Redirecting to login page.');
+          window.location.href = '/login/';
+          return;
+      }
+
+      try {
+          const response = await fetch(`/recipes/delete/${id}/`, {
+              method: 'DELETE',
+              headers: {
+                  'Authorization': `Bearer ${token}`,
+              },
+          });
+
+          if (response.ok) {
+              alert('Recipe deleted successfully!');
+              loadRecipes(); // Reload the recipe list
+          } else {
+              console.error('Failed to delete recipe:', response.status);
+              alert('An error occurred while deleting the recipe.');
+          }
+      } catch (error) {
+          console.error('Error deleting recipe:', error);
+          alert('A network error occurred. Please try again.');
+      }
+  }
+
+  // Function to update a recipe (You can add more implementation logic as needed)
+  function updateRecipe(id) {
+      alert(`Update functionality for Recipe ID ${id} is not implemented yet.`);
+      // Implement the update logic as required
+  }
+
+  // Load recipes on page load
+  document.addEventListener('DOMContentLoaded', loadRecipes);
+</script>
+
+
+{% endblock %}
